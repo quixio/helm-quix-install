@@ -1,0 +1,8 @@
+name: "install-env-var"
+version: "0.1.0"
+usage: "helm install-env-var --name <namelocalchart> -v <absolute path of values.yaml> -c <absolute path of Charts.yaml>"
+description: |-
+  A helm plugin to allow rendering environment variable into values.yml and Chart.yaml
+ignoreFlags: false
+useTunnel: true
+command: "python $HELM_PLUGIN_DIR/install-envar.py"
