@@ -21,8 +21,6 @@ if __name__ == "__main__":
     else:
         logging.basicConfig(level=logging.INFO ,format=log_format)
 
-    # You can handle your custom logic here before running the Helm command
-
     helm_manager = HelmManager(args)
     helm_manager.update()
 

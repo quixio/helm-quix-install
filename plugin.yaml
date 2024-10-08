@@ -5,7 +5,7 @@ description: |-
   A helm plugin to install quix.
 ignoreFlags: false
 useTunnel: true
-command: "python $HELM_PLUGIN_DIR/quix-install-command.py"
+command: "$HELM_PLUGIN_DIR/venv/bin/python $HELM_PLUGIN_DIR/quix-install-command.py"
 hooks:
   install: |
     #!/bin/bash
@@ -27,10 +27,8 @@ hooks:
       exit 1
     fi
 
-    # Install pip requirements
-    if [ -f "$HELM_PLUGIN_DIR/src/requirements.txt" ]; then
-      echo "Installing Python dependencies..."
-      $PYTHON_CMD -m pip install --user -r "$HELM_PLUGIN_DIR/src/requirements.txt"
-    else
-      echo "No requirements.txt found in $HELM_PLUGIN_DIR."
-    fi
+    # Create a virtual environment in the plugin directory
+    $PYTHON_CMD -m venv "$HELM_PLUGIN_DIR/venv"
+
+    # Activate the virtual environment and install pip requirements
+    "$HELM_PLUGIN_DIR/venv/bin/pip" install -r "$HELM_PLUGIN_DIR/requirements.txt"
