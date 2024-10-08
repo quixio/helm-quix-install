@@ -122,3 +122,4 @@ venv.bak/
 # Celery stuff
 celerybeat-schedule
 celerybeat
+tmp/

@@ -14,16 +14,13 @@ logging.basicConfig(level=logging.DEBUG ,format=log_format)
 class HelmManager:
     def __init__(self, args: Namespace = None):
         self.release_name = args.release_name
-        # self.chart_name = args.chart_name
         self.repo,self.version = self._extract_version_and_format(args.repo)
         self.namespace = args.namespace
-        #Create tmp dir
         self.deployment= DeploymentManager()
         self.deployment.setup()
         self.current_file_path=os.path.join(self.deployment.get_dir() ,self.release_name+"current.yaml")
         self.default_file_path=os.path.join(self.deployment.get_dir() ,self.release_name+"default.yaml")
         self.merged_file_path=os.path.join(self.deployment.get_dir() ,self.release_name+"merged.yaml")
-        print(self.deployment.get_dir())
 
     def _run_helm_with_args(self, helm_args: list, output_file: str = None):
         command = ['helm'] + helm_args
@@ -100,8 +97,8 @@ class HelmManager:
         if exist_release:
             try: 
                 values= self._get_values(release_name=self.release_name)
-                # self.pull_repo()
-                # self.extract_chart()
+                self.pull_repo()
+                self.extract_chart()
                 FileManager.write_values(file_path=self.current_file_path,values=values)
                 yaml_merger = YamlMerger(source_file=self.current_file_path,new_fields_file=self.default_file_path)
                 yaml_merger.save_merged_yaml(file_path=self.merged_file_path)
