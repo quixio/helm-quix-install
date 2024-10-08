@@ -17,10 +17,13 @@ class HelmManager:
             self.override_path=None
         self.release_name = args.release_name
         self.repo,self.version = self._extract_version_and_format(args.repo)
+        #Statement because it is a globa flag and it is passed by env var
+        if not args.namespace:
+            args.namespace = os.environ.get('HELM_NAMESPACE')
         self.namespace = args.namespace
+        logging.debug(f"Setting namespace as {self.namespace}")
         self.deployment= DeploymentManager()
         self.deployment.setup()
-
         self.current_file_path=os.path.join(self.deployment.get_dir() ,self.release_name+"current.yaml")
         self.default_file_path=os.path.join(self.deployment.get_dir() ,self.release_name+"default.yaml")
         self.merged_file_path=os.path.join(self.deployment.get_dir() ,self.release_name+"merged.yaml")
@@ -107,6 +110,7 @@ class HelmManager:
                 logging.info("Running update...")
                 self._update_with_merged_values()
                 FileManager.delete_folder(self.deployment.get_dir())
+                logging.info("Updated")
             except Exception as e:
                 logging.error(f"Something was wrong meanwhile it was doing the merge: Because {e}")
         else:
