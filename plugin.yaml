@@ -1,5 +1,5 @@
 name: "quix-manager"
-version: "0.1.0"
+version: "0.1.1"
 usage: "helm quix-manager update --release-name quixplatform-manager --repo quixcontainerregistry.azurecr.io/helm/quixplatform-manager:1.5.4"
 description: |-
   A helm plugin to install quix.
