@@ -13,11 +13,20 @@ logging.basicConfig(level=logging.DEBUG ,format=log_format)
 
 class HelmManager:
     def __init__(self, args: Namespace = None):
+        if args.override:
+            if not os.path.isfile(args.override):
+                logging.error(f"Error: You use --override and the file '{args.override}' does not exist or is not a valid file.")
+                sys.exit(1)
+            else:
+                self.override_path=args.override
+        else:
+            self.override_path=None
         self.release_name = args.release_name
         self.repo,self.version = self._extract_version_and_format(args.repo)
         self.namespace = args.namespace
         self.deployment= DeploymentManager()
         self.deployment.setup()
+
         self.current_file_path=os.path.join(self.deployment.get_dir() ,self.release_name+"current.yaml")
         self.default_file_path=os.path.join(self.deployment.get_dir() ,self.release_name+"default.yaml")
         self.merged_file_path=os.path.join(self.deployment.get_dir() ,self.release_name+"merged.yaml")
@@ -76,8 +85,6 @@ class HelmManager:
             chart_name = self.repo.split("/")[-1]
             chart_archive = os.path.join(self.deployment.get_dir(), f"{chart_name}-{self.version}.tgz")
             values_path = os.path.join(self.deployment.get_dir(),chart_name ,"values.yaml")
-            with tarfile.open(chart_archive, "r:gz") as tar:
-                tar.extractall(path=self.deployment.get_dir())
             FileManager.extract_tgz(archive=chart_archive,path=self.deployment.get_dir())
             FileManager.copy_and_rename(from_path=values_path,new_filename=self.default_file_path)
             logging.info(f"Chart extracted to {self.deployment.get_dir()}.")
@@ -100,11 +107,11 @@ class HelmManager:
                 self.pull_repo()
                 self.extract_chart()
                 FileManager.write_values(file_path=self.current_file_path,values=values)
-                yaml_merger = YamlMerger(source_file=self.current_file_path,new_fields_file=self.default_file_path)
+                yaml_merger = YamlMerger(source_file=self.current_file_path,new_fields_file=self.default_file_path,override_file=self.override_path)
                 yaml_merger.save_merged_yaml(file_path=self.merged_file_path)
-                self._update_with_merged_values()
+                # self._update_with_merged_values()
             except Exception as e:
-                logging.error(f"Something was wrong meanwhile it was doing the merge: Casue {e}")
+                logging.error(f"Something was wrong meanwhile it was doing the merge: Because {e}")
         else:
             logging.info(f"You need to install {self.release_name} first")
 
