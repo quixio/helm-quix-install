@@ -9,7 +9,7 @@ command: "python $HELM_PLUGIN_DIR/quix-install-command.py"
 hooks:
   install: |
     #!/bin/bash
-    set -x
+    set -e
 
     # Check for Python 3
     if command -v python3 &>/dev/null; then
@@ -28,7 +28,7 @@ hooks:
     fi
 
     # Install pip requirements
-    if [ -f "$HELM_PLUGIN_DIR/requirements.txt" ]; then
+    if [ -f "$HELM_PLUGIN_DIR/src/requirements.txt" ]; then
       echo "Installing Python dependencies..."
       $PYTHON_CMD -m pip install --user -r "$HELM_PLUGIN_DIR/src/requirements.txt"
     else
