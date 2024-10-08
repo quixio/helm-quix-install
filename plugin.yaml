@@ -9,7 +9,7 @@ command: "python $HELM_PLUGIN_DIR/quix-install-command.py"
 hooks:
   install: |
     #!/bin/bash
-    set -e
+    set -x
 
     # Check for Python 3
     if command -v python3 &>/dev/null; then
