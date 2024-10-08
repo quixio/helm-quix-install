@@ -16,11 +16,11 @@ if __name__ == "__main__":
     
     args, helm_args = parser.parse_known_args()
 
-    #print (args)
+
     # You can handle your custom logic here before running the Helm command
 
     helm_manager = HelmManager(args)
     helm_manager.update()
-    # if args.
+
 
 
