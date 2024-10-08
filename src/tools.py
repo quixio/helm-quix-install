@@ -109,7 +109,7 @@ class HelmManager:
                 FileManager.write_values(file_path=self.current_file_path,values=values)
                 yaml_merger = YamlMerger(source_file=self.current_file_path,new_fields_file=self.default_file_path,override_file=self.override_path)
                 yaml_merger.save_merged_yaml(file_path=self.merged_file_path)
-                # self._update_with_merged_values()
+                self._update_with_merged_values()
             except Exception as e:
                 logging.error(f"Something was wrong meanwhile it was doing the merge: Because {e}")
         else:

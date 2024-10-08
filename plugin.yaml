@@ -1,8 +1,8 @@
-name: "install-env-var"
+name: "quix-manager"
 version: "0.1.0"
-usage: "helm install-env-var --name <namelocalchart> -v <absolute path of values.yaml> -c <absolute path of Charts.yaml>"
+usage: "helm quix-manager update --release-name quixplatform-manager --repo quixcontainerregistry.azurecr.io/helm/quixplatform-manager:1.5.4"
 description: |-
-  A helm plugin to allow rendering environment variable into values.yml and Chart.yaml
+  A helm plugin to install quix.
 ignoreFlags: false
 useTunnel: true
-command: "python $HELM_PLUGIN_DIR/install-envar.py"
+command: "python $HELM_PLUGIN_DIR/quix-install-command.py"
