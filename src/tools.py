@@ -1,4 +1,4 @@
-import os, sys, shutil, subprocess, yaml, tarfile
+import os, sys, shutil, subprocess, yaml, tarfile,logging
 from argparse import Namespace
 
 # log_format = '%(levelname)s: %(message)s' 
