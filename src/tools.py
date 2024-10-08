@@ -1,14 +1,8 @@
-import os
-import sys
-import shutil
-import subprocess
-import logging
-import yaml
-import tarfile
+import os, sys, shutil, subprocess, yaml, tarfile
 from argparse import Namespace
 
-log_format = '%(levelname)s: %(message)s' 
-logging.basicConfig(level=logging.DEBUG ,format=log_format)
+# log_format = '%(levelname)s: %(message)s' 
+# logging.basicConfig(level=logging.DEBUG ,format=log_format)
 
 
 class HelmManager:
@@ -30,6 +24,7 @@ class HelmManager:
         self.current_file_path=os.path.join(self.deployment.get_dir() ,self.release_name+"current.yaml")
         self.default_file_path=os.path.join(self.deployment.get_dir() ,self.release_name+"default.yaml")
         self.merged_file_path=os.path.join(self.deployment.get_dir() ,self.release_name+"merged.yaml")
+
 
     def _run_helm_with_args(self, helm_args: list, output_file: str = None):
         command = ['helm'] + helm_args
@@ -109,7 +104,8 @@ class HelmManager:
                 FileManager.write_values(file_path=self.current_file_path,values=values)
                 yaml_merger = YamlMerger(source_file=self.current_file_path,new_fields_file=self.default_file_path,override_file=self.override_path)
                 yaml_merger.save_merged_yaml(file_path=self.merged_file_path)
-                self._update_with_merged_values()
+                #self._update_with_merged_values()
+                FileManager.delete_folder(self.deployment.get_dir())
             except Exception as e:
                 logging.error(f"Something was wrong meanwhile it was doing the merge: Because {e}")
         else:

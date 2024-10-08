@@ -6,3 +6,31 @@ description: |-
 ignoreFlags: false
 useTunnel: true
 command: "python $HELM_PLUGIN_DIR/quix-install-command.py"
+hooks:
+  install: |
+    #!/bin/bash
+    set -e
+
+    # Check for Python 3
+    if command -v python3 &>/dev/null; then
+      PYTHON_CMD=python3
+    elif command -v python &>/dev/null; then
+      PYTHON_CMD=python
+    else
+      echo "Python 3 is required for this plugin. Please install Python 3."
+      exit 1
+    fi
+
+    # Verify that the Python command is version 3
+    if ! $PYTHON_CMD -c 'import sys; exit(0) if sys.version_info[0] == 3 else exit(1)'; then
+      echo "Detected Python version is not 3. Please use Python 3."
+      exit 1
+    fi
+
+    # Install pip requirements
+    if [ -f "$HELM_PLUGIN_DIR/requirements.txt" ]; then
+      echo "Installing Python dependencies..."
+      $PYTHON_CMD -m pip install --user -r "$HELM_PLUGIN_DIR/requirements.txt"
+    else
+      echo "No requirements.txt found in $HELM_PLUGIN_DIR."
+    fi

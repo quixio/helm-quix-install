@@ -1,4 +1,4 @@
-import argparse
+import argparse, logging
 from src.tools import  HelmManager
 
 
@@ -15,7 +15,11 @@ if __name__ == "__main__":
     # Parse known and unknown arguments
     
     args, helm_args = parser.parse_known_args()
-
+    log_format = '%(levelname)s: %(message)s' 
+    if args.verbose:
+        logging.basicConfig(level=logging.DEBUG ,format=log_format)
+    else:
+        logging.basicConfig(level=logging.INFO ,format=log_format)
 
     # You can handle your custom logic here before running the Helm command
 
