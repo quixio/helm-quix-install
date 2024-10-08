@@ -30,7 +30,7 @@ hooks:
     # Install pip requirements
     if [ -f "$HELM_PLUGIN_DIR/requirements.txt" ]; then
       echo "Installing Python dependencies..."
-      $PYTHON_CMD -m pip install --user -r "$HELM_PLUGIN_DIR/requirements.txt"
+      $PYTHON_CMD -m pip install --user -r "$HELM_PLUGIN_DIR/src/requirements.txt"
     else
       echo "No requirements.txt found in $HELM_PLUGIN_DIR."
     fi
