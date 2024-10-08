@@ -31,4 +31,4 @@ hooks:
     $PYTHON_CMD -m venv "$HELM_PLUGIN_DIR/venv"
 
     # Activate the virtual environment and install pip requirements
-    "$HELM_PLUGIN_DIR/venv/bin/pip" install -r "$HELM_PLUGIN_DIR/requirements.txt"
+    "$HELM_PLUGIN_DIR/venv/bin/pip" install -r "$HELM_PLUGIN_DIR/src/requirements.txt"
