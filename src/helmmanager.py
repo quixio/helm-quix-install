@@ -21,6 +21,7 @@ class HelmManager:
         if not args.namespace:
             args.namespace = os.environ.get('HELM_NAMESPACE')
         self.namespace = args.namespace
+        self.action = args.action
         logging.debug(f"Setting namespace as {self.namespace}")
         self.deployment= DeploymentManager()
         self.deployment.setup()
@@ -95,9 +96,18 @@ class HelmManager:
         list_args = ['upgrade', '--install', "quixplatform-manager",f"oci://{self.repo}","--version",self.version,"--values",self.merged_file_path]
         if self.namespace:
             list_args.extend(["--namespace", self.namespace])
+        #Here template
         self._run_helm_with_args(list_args)
 
-    def update(self):
+    def _template_with_merged_values(self):
+        list_args = ['template', "quixplatform-manager",f"oci://{self.repo}","--version",self.version,"--values",self.merged_file_path]
+        if self.namespace:
+            list_args.extend(["--namespace", self.namespace])
+        #Here template
+        result= self._run_helm_with_args(list_args)
+        print (result.stdout.decode('utf-8'))
+
+    def run(self):
         exist_release = self._check_if_exists(release_name=self.release_name)
         if exist_release:
             try: 
@@ -108,7 +118,11 @@ class HelmManager:
                 yaml_merger = YamlMerger(source_file=self.current_file_path,new_fields_file=self.default_file_path,override_file=self.override_path)
                 yaml_merger.save_merged_yaml(file_path=self.merged_file_path)
                 logging.info("Running update...")
-                self._update_with_merged_values()
+                match self.action:
+                    case "update":
+                        self._update_with_merged_values()
+                    case "template":
+                        self._template_with_merged_values()
                 FileManager.delete_folder(self.deployment.get_dir())
                 logging.info("Updated")
             except Exception as e:

@@ -26,7 +26,6 @@ COPY . /quix-manager/
 # Set working directory
 WORKDIR /quix-manager
 
-
 # Install the Helm plugin
 RUN helm plugin install ./
 

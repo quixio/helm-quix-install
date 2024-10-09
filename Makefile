@@ -1,7 +1,8 @@
 # Variables
-IMAGE_NAME=quixpublic.azurecr.io/helm-quix-install
+IMAGE_NAME=quixpublic.azurecr.io/helm-quix-install:newargo
 CONTAINER_NAME=helm-quix-install-container
 DOCKER_FILE=Dockerfile
+PLATFORM ?= linux/amd64
 # Build the Docker image
 build:
 	@echo "Building Docker image..."
@@ -16,7 +17,7 @@ run:
 #Publish to the public registry
 publish:
 	@echo "Publishing container to ..."
-	docker push $(IMAGE_NAME)
+	docker buildx build --platform $(PLATFORM) --push  -f $(DOCKER_FILE) -t $(IMAGE_NAME) .
 
 # Clean up Docker images and containers
 clean:
