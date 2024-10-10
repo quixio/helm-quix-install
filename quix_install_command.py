@@ -43,7 +43,6 @@ if __name__ == "__main__":
 
     # Get the args from command
     args, _ = parser.parse_known_args()
-    print (args)
     # Avoid adding duplicate handlers in case the script runs multiple times
     if not logger.hasHandlers():
         # Handler for logging to stdout
