@@ -1,8 +1,6 @@
 import os, sys, shutil, subprocess, yaml, tarfile,logging
 from argparse import Namespace
 
-# log_format = '%(levelname)s: %(message)s' 
-# logging.basicConfig(level=logging.DEBUG ,format=log_format)
 logging = logging.getLogger('helm_logger')
 
 class HelmManager:
@@ -161,8 +159,8 @@ class HelmManager:
                 logging.info("Merged YAML file created.")
                 
                 match self.action:
-                    # case "update":
-                    #     self._update_with_merged_values()
+                    case "update":
+                        self._update_with_merged_values()
                     case "template":
                         self._template_with_merged_values()
 

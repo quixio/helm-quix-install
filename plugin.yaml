@@ -5,7 +5,7 @@ description: |-
   A helm plugin to install quix.
 ignoreFlags: false
 useTunnel: true
-command: "$HELM_PLUGIN_DIR/venv/bin/python $HELM_PLUGIN_DIR/quix-install-command.py"
+command: "$HELM_PLUGIN_DIR/venv/bin/python $HELM_PLUGIN_DIR/quix_install_command.py"
 hooks:
   install: |
     #!/bin/bash
