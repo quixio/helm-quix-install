@@ -4,12 +4,13 @@ from src.helm_manager import  HelmManager
 
 
 # Function to convert logs into a Kubernetes ConfigMap format
-def generate_configmap(logs, configmap_name='quix-manager-log-configmap'):
+def generate_configmap(logs, configmap_name='quix-manager-log-configmap', namespace = "quix"):
     configmap = {
         'apiVersion': 'v1',
         'kind': 'ConfigMap',
         'metadata': {
             'name': configmap_name,
+            'namespace': namespace
         },
         'data': {
             'helm-logs': logs
