@@ -40,12 +40,11 @@ if __name__ == "__main__":
     
     # Configure logger for both stdout and in-memory logging
     logger = logging.getLogger('helm_logger')
-   # Avoid adding duplicate handlers in case the script runs multiple times
 
+    # Get the args from command
+    args= parser.parse_known_args()
 
-    args, helm_args = parser.parse_known_args()
-
-    
+    # Avoid adding duplicate handlers in case the script runs multiple times
     if not logger.hasHandlers():
         # Handler for logging to stdout
         console_handler = logging.StreamHandler()
@@ -62,7 +61,6 @@ if __name__ == "__main__":
         logger.setLevel(logging.INFO)
 
     logger.info("Starting Helm command execution")
-
     # Log some initial info
     helm_manager = HelmManager(args)
     helm_manager.run()
