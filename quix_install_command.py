@@ -30,7 +30,7 @@ if __name__ == "__main__":
     parser.add_argument('--namespace', help='Specify the Kubernetes namespace for the Helm command')
     parser.add_argument('--verbose', action='store_true', help='Enable verbose output for this script and the Helm command')
     parser.add_argument('--logs-as-config', action='store_true', help='Enable verbose output for this script and the Helm command')
-    # Parse known and unknown arguments
+    
 
     # Set up logging
     log_format = '# %(levelname)s: %(message)s'
@@ -42,8 +42,8 @@ if __name__ == "__main__":
     logger = logging.getLogger('helm_logger')
 
     # Get the args from command
-    args= parser.parse_known_args()
-
+    args, _ = parser.parse_known_args()
+    print (args)
     # Avoid adding duplicate handlers in case the script runs multiple times
     if not logger.hasHandlers():
         # Handler for logging to stdout
@@ -55,6 +55,7 @@ if __name__ == "__main__":
         memory_handler = logging.StreamHandler(log_stream)
         memory_handler.setFormatter(logging.Formatter(log_format))
         logger.addHandler(memory_handler)
+
     if args.verbose:
         logger.setLevel(logging.DEBUG)
     else:
