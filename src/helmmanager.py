@@ -3,137 +3,186 @@ from argparse import Namespace
 
 # log_format = '%(levelname)s: %(message)s' 
 # logging.basicConfig(level=logging.DEBUG ,format=log_format)
-
+logging = logging.getLogger('helm_logger')
 
 class HelmManager:
     def __init__(self, args: Namespace = None):
+        """
+        Initializes the HelmManager with provided arguments.
+
+        :param args: Parsed command-line arguments for the Helm operation.
+        """
+        # Validate override file
         if args.override:
             if not os.path.isfile(args.override):
-                logging.error(f"Error: You use --override and the file '{args.override}' does not exist or is not a valid file.")
+                logging.error(f"Error: The override file '{args.override}' does not exist or is not valid.")
                 sys.exit(1)
             else:
-                self.override_path=args.override
+                logging.debug(f"Override file found: {args.override}")
+                self.override_path = args.override
         else:
-            self.override_path=None
-        self.release_name = args.release_name
-        self.repo,self.version = self._extract_version_and_format(args.repo)
-        #Statement because it is a globa flag and it is passed by env var
-        if not args.namespace:
-            args.namespace = os.environ.get('HELM_NAMESPACE')
-        self.namespace = args.namespace
-        self.action = args.action
-        logging.debug(f"Setting namespace as {self.namespace}")
-        self.deployment= DeploymentManager()
-        self.deployment.setup()
-        self.current_file_path=os.path.join(self.deployment.get_dir() ,self.release_name+"current.yaml")
-        self.default_file_path=os.path.join(self.deployment.get_dir() ,self.release_name+"default.yaml")
-        self.merged_file_path=os.path.join(self.deployment.get_dir() ,self.release_name+"merged.yaml")
+            logging.debug("No override file provided.")
+            self.override_path = None
 
+        self.release_name = args.release_name
+        self.repo, self.version = self._extract_version_and_format(args.repo)
+        self.namespace = args.namespace or os.environ.get('HELM_NAMESPACE')
+        self.action = args.action
+
+        # Initialize deployment manager
+        self.deployment = DeploymentManager()
+        self.deployment.setup()
+
+        deployment_dir = self.deployment.get_dir()
+        self.current_file_path = os.path.join(deployment_dir, f"{self.release_name}current.yaml")
+        self.default_file_path = os.path.join(deployment_dir, f"{self.release_name}default.yaml")
+        self.merged_file_path = os.path.join(deployment_dir, f"{self.release_name}merged.yaml")
 
     def _run_helm_with_args(self, helm_args: list, output_file: str = None):
+        """
+        Runs a Helm command with the provided arguments.
+
+        :param helm_args: List of arguments for the Helm command.
+        :param output_file: Optional file to store Helm command output.
+        """
         command = ['helm'] + helm_args
-        logging.debug(f"Running Helm command: {command}")
+        logging.debug(f"Executing Helm command: {command}")
 
         try:
             result = subprocess.run(command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            logging.info("Executed successfully!")
+            logging.info("Helm command executed successfully.")
             return result
         except subprocess.CalledProcessError as e:
-            logging.error(f"Helm command failed with error: {e.stderr.decode('utf-8')}")
+            logging.error(f"Helm command failed: {e.stderr.decode('utf-8')}")
             sys.exit(1)
 
-    def _extract_version_and_format(self,repo):
+    def _extract_version_and_format(self, repo):
+        """
+        Extracts the repository URL and version from the repository string.
+
+        :param repo: The repository string (e.g., 'repo:version').
+        :return: Tuple of repository URL and version.
+        """
         try:
             repo_split = repo.split(":")
-            return repo_split[0],repo_split[1]
+            return repo_split[0], repo_split[1]
         except (IndexError, ValueError):
-            raise ValueError(f"Invalid version format: {self.repo}")
+            logging.error(f"Invalid repository format: {repo}")
+            raise ValueError(f"Invalid version format: {repo}")
 
     def _get_values(self, release_name: str):
+        """
+        Retrieves the values of a Helm release.
+
+        :param release_name: Name of the Helm release.
+        :return: YAML values of the release.
+        """
         list_args = ['get', 'values', release_name]
         if self.namespace:
             list_args.extend(['--namespace', self.namespace])
         return self._run_helm_with_args(list_args).stdout.decode('utf-8')
 
     def _check_if_exists(self, release_name: str):
+        """
+        Checks if a Helm release exists.
+
+        :param release_name: Name of the Helm release.
+        :return: True if the release exists, False otherwise.
+        """
         list_args = ['list', '--filter', release_name]
         if self.namespace:
             list_args.extend(["--namespace", self.namespace])
         result = self._run_helm_with_args(list_args)
-        if release_name in result.stdout.decode('utf-8'):
-            logging.info(f"Exists the release {self.release_name}")
-            return True
-        logging.info(f"Does not exist the release {self.release_name}")
-        return False
+        return release_name in result.stdout.decode('utf-8')
 
-    
     def pull_repo(self):
-        """Pull the OCI Helm chart from the specified repository."""
+        """
+        Pulls the Helm chart from the specified repository.
+        """
         try:
             helm_args = ['pull', f"oci://{self.repo}", '--version', self.version, '--destination', self.deployment.get_dir()]
             self._run_helm_with_args(helm_args)
-
-            logging.info(f"Chart {self.repo} pulled successfully to {self.deployment.get_dir()}.")
+            logging.info(f"Chart {self.repo} pulled successfully.")
         except Exception as e:
             logging.error(f"Error pulling chart: {e}")
             sys.exit(1)
 
     def extract_chart(self):
-        """Extract the pulled chart from the .tgz file."""
+        """
+        Extracts the pulled Helm chart from a .tgz file.
+        """
         try:
             chart_name = self.repo.split("/")[-1]
             chart_archive = os.path.join(self.deployment.get_dir(), f"{chart_name}-{self.version}.tgz")
-            values_path = os.path.join(self.deployment.get_dir(),chart_name ,"values.yaml")
-            FileManager.extract_tgz(archive=chart_archive,path=self.deployment.get_dir())
-            FileManager.copy_and_rename(from_path=values_path,new_filename=self.default_file_path)
-            logging.info(f"Chart extracted to {self.deployment.get_dir()}.")
+            values_path = os.path.join(self.deployment.get_dir(), chart_name, "values.yaml")
+            FileManager.extract_tgz(archive=chart_archive, path=self.deployment.get_dir())
+            FileManager.copy_and_rename(from_path=values_path, new_filename=self.default_file_path)
+            logging.info(f"Chart {chart_name} extracted successfully.")
         except Exception as e:
             logging.error(f"Error extracting chart: {e}")
             sys.exit(1)
 
-
     def _update_with_merged_values(self):
-        list_args = ['upgrade', '--install', "quixplatform-manager",f"oci://{self.repo}","--version",self.version,"--values",self.merged_file_path]
+        """
+        Updates or installs the Helm release with the merged values.
+        """
+        logging.info("Updating Helm release with merged values.")
+        list_args = ['upgrade', '--install', "quixplatform-manager", f"oci://{self.repo}", "--version", self.version, "--values", self.merged_file_path]
         if self.namespace:
             list_args.extend(["--namespace", self.namespace])
-        #Here template
         self._run_helm_with_args(list_args)
 
     def _template_with_merged_values(self):
-        list_args = ['template', "quixplatform-manager",f"oci://{self.repo}","--version",self.version,"--values",self.merged_file_path]
+        """
+        Templates the Helm release with the merged values.
+        """
+        logging.info("Templating Helm release with merged values.")
+        list_args = ['template', "quixplatform-manager", f"oci://{self.repo}", "--version", self.version, "--values", self.merged_file_path]
         if self.namespace:
             list_args.extend(["--namespace", self.namespace])
-        #Here template
-        result= self._run_helm_with_args(list_args)
-        print (result.stdout.decode('utf-8'))
+        result = self._run_helm_with_args(list_args)
+        print(result.stdout.decode('utf-8'))
 
     def run(self):
+        """
+        Executes the main logic: checks if the release exists, retrieves values, merges YAML files, 
+        and either updates the release or generates a template.
+        """
         exist_release = self._check_if_exists(release_name=self.release_name)
+
         if exist_release:
-            try: 
-                values= self._get_values(release_name=self.release_name)
+            try:
+                values = self._get_values(release_name=self.release_name)
                 self.pull_repo()
                 self.extract_chart()
-                FileManager.write_values(file_path=self.current_file_path,values=values)
-                yaml_merger = YamlMerger(source_file=self.current_file_path,new_fields_file=self.default_file_path,override_file=self.override_path)
+                FileManager.write_values(file_path=self.current_file_path, values=values)
+                yaml_merger = YamlMerger(source_file=self.current_file_path, new_fields_file=self.default_file_path, override_file=self.override_path)
                 yaml_merger.save_merged_yaml(file_path=self.merged_file_path)
-                logging.info("Running update...")
+                logging.info("Merged YAML file created.")
+                
                 match self.action:
-                    case "update":
-                        self._update_with_merged_values()
+                    # case "update":
+                    #     self._update_with_merged_values()
                     case "template":
                         self._template_with_merged_values()
+
                 FileManager.delete_folder(self.deployment.get_dir())
-                logging.info("Updated")
+                logging.info(f"Action {self.action} completed successfully.")
             except Exception as e:
-                logging.error(f"Something was wrong meanwhile it was doing the merge: Because {e}")
+                logging.error(f"Error during execution: {e}")
+                sys.exit(1)
         else:
-            logging.info(f"You need to install {self.release_name} first")
+            logging.warning(f"Release {self.release_name} does not exist. You need to install it first.")
 
 
 class FileManager:
     @staticmethod
     def delete_folder(directory: str):
+        """
+        Deletes the specified directory if it exists.
+
+        :param directory: The path to the directory to be deleted.
+        """
         try:
             if os.path.exists(directory):
                 shutil.rmtree(directory)
@@ -143,14 +192,27 @@ class FileManager:
 
     @staticmethod
     def extract_tgz(archive: str, path: str):
+        """
+        Extracts a .tgz archive to the specified directory.
+
+        :param archive: The path to the .tgz archive.
+        :param path: The path where the archive should be extracted.
+        """
         try:
             with tarfile.open(archive, "r:gz") as tar:
                 tar.extractall(path)
+            logging.debug(f"Extracted archive {archive} to {path}")
         except Exception as e:
-            logging.error(f"Error extracting the file {archive}: due to {e}")
+            logging.error(f"Error extracting the file {archive}: {e}")
             raise
+
     @staticmethod
     def create_folder(directory: str):
+        """
+        Creates the specified directory if it does not exist.
+
+        :param directory: The path to the directory to be created.
+        """
         try:
             if not os.path.exists(directory):
                 os.makedirs(directory)
@@ -159,60 +221,102 @@ class FileManager:
             logging.error(f"Error creating directory {directory}. Error: {str(e)}")
 
     @staticmethod
-    def copy_and_rename(from_path: str,new_filename: str):
+    def copy_and_rename(from_path: str, new_filename: str):
+        """
+        Copies a file from one location to another and renames it.
+
+        :param from_path: The path of the file to be copied.
+        :param new_filename: The new name and location of the copied file.
+        """
         if os.path.exists(from_path):
             try:
                 shutil.copy(from_path, new_filename)
-                logging.info(f"Copied and renamed values.yaml as {new_filename}")
+                logging.info(f"Copied and renamed file from {from_path} to {new_filename}")
             except Exception as e:
-                logging.error(f"Error copying and renaming values.yaml: {e}")
+                logging.error(f"Error copying and renaming file: {e}")
                 raise
         else:
-            logging.error(f"No File found")
-
+            logging.error(f"File not found: {from_path}")
 
     @staticmethod
     def write_values(file_path: str, values: str):
-        with open(file_path, "w") as f:
-            if isinstance(values, dict):
-                # If the values are a dictionary, serialize them to YAML format
-                yaml.dump(values, f, Dumper=LiteralDumper, default_flow_style=False, sort_keys=False)
-            else:
-                # Otherwise, treat it as a string and write it directly
-                f.write(str(values))
-        logging.debug(f"Wrote values to {file_path}")
+        """
+        Writes YAML or string values to the specified file.
+
+        :param file_path: The path of the file where values will be written.
+        :param values: The content to be written to the file, can be a string or a dictionary.
+        """
+        try:
+            with open(file_path, "w") as f:
+                if isinstance(values, dict):
+                    yaml.dump(values, f, default_flow_style=False, sort_keys=False)
+                else:
+                    f.write(str(values))
+            logging.debug(f"Wrote values to {file_path}")
+        except Exception as e:
+            logging.error(f"Error writing values to {file_path}: {e}")
+            raise
 
 
 
 class DeploymentManager:
     def __init__(self, tempdir="./tmp"):
+        """
+        Initializes the DeploymentManager with a temporary directory.
+
+        :param tempdir: The path to the temporary directory to be used. Default is './tmp'.
+        """
         self.tempdir = tempdir
         self.file_manager = FileManager()
         
     def get_dir(self):
+        """
+        Returns the path to the temporary directory.
+
+        :return: The path of the temporary directory.
+        """
         return self.tempdir
 
     def setup(self):
+        """
+        Creates the temporary directory using FileManager and logs the action.
+
+        :return: True if the directory is successfully set up.
+        """
         self.file_manager.create_folder(self.tempdir)
-        logging.debug("Created tempdir in {self.tempdir}")
         return True
 
 
 
 class LiteralDumper(yaml.Dumper):
     def increase_indent(self, flow=False, indentless=False):
+        """
+        Increases indentation when dumping YAML content.
+        
+        :param flow: Determines if the flow style is used (default is False).
+        :param indentless: If True, omits indentation (default is False).
+        :return: Calls the parent class method to handle indentation.
+        """
         return super(LiteralDumper, self).increase_indent(flow, indentless)
 
 def str_presenter(dumper, data):
     """
-    If the string contains newline characters, use the '|' block scalar style.
-    This preserves newlines and proper indentation in the output YAML.
+    Represents multiline strings using the '|' block scalar style in YAML.
+    
+        - If the string contains newline characters, it uses '|' to preserve newlines.
+        - Otherwise, it uses the default string representation.
+
+    :param dumper: The YAML dumper instance.
+    :param data: The string data to be represented.
+    :return: YAML representation of the string.
     """
     if '\n' in data:
         return dumper.represent_scalar('tag:yaml.org,2002:str', data, style='|')
     return dumper.represent_scalar('tag:yaml.org,2002:str', data)
 
+# Add the custom string presenter to handle multi-line strings in YAML
 yaml.add_representer(str, str_presenter)
+
 
 class YamlMerger:
     def __init__(self, source_file: str, new_fields_file: str, override_file: str = None):
@@ -234,7 +338,12 @@ class YamlMerger:
         self.override_data = self._load_yaml(self.override_file) if self.override_file else {}
 
     def _load_yaml(self, file_path: str):
-        """Loads a YAML file and returns its content as a dictionary."""
+        """
+        Loads a YAML file and returns its content as a dictionary.
+
+        :param file_path: The path to the YAML file.
+        :return: A dictionary representing the YAML content.
+        """
         if file_path:
             with open(file_path, 'r') as f:
                 return yaml.safe_load(f)
@@ -242,8 +351,10 @@ class YamlMerger:
 
     def merge(self):
         """
-        Merges the new fields into the source of truth without overwriting, 
-        and applies the overrides if the override file is provided.
+        Merges the new fields into the source YAML without overwriting existing fields, 
+        and applies the overrides if an override file is provided.
+
+        :return: A dictionary with the merged YAML content.
         """
         # Step 1: Merge new fields into the source without overwriting
         merged_data = self._merge_new_fields(self.source_data, self.new_fields_data)
@@ -255,7 +366,13 @@ class YamlMerger:
         return merged_data
 
     def _merge_new_fields(self, source: dict, new_fields: dict):
-        """Recursively merge new fields into the source without overwriting existing ones."""
+        """
+        Recursively merges new fields into the source without overwriting existing values.
+
+        :param source: The original YAML data.
+        :param new_fields: The new fields to add.
+        :return: A dictionary with the new fields merged into the source.
+        """
         for key, value in new_fields.items():
             if key not in source:
                 source[key] = value
@@ -265,7 +382,13 @@ class YamlMerger:
         return source
 
     def _apply_overrides(self, data: dict, overrides: dict):
-        """Recursively apply override values to the data."""
+        """
+        Recursively applies override values to the existing data.
+
+        :param data: The original or merged YAML data.
+        :param overrides: The override fields to apply.
+        :return: A dictionary with the overrides applied.
+        """
         for key, value in overrides.items():
             if isinstance(value, dict) and key in data and isinstance(data[key], dict):
                 # Recursively apply overrides if both are dictionaries
@@ -277,9 +400,9 @@ class YamlMerger:
 
     def save_merged_yaml(self, file_path: str):
         """
-        Saves the merged YAML content to the specified output file.
-        
-        :param output_file: The file path to save the merged YAML.
+        Saves the merged YAML content to the specified file.
+
+        :param file_path: The file path where the merged YAML will be saved.
         """
         merged_data = self.merge()
         del merged_data['USER-SUPPLIED VALUES']

@@ -20,14 +20,23 @@ RUN curl -L https://get.helm.sh/helm-${HELM_VERSION}-linux-amd64.tar.gz | \
     mv /tmp/linux-amd64/helm /usr/local/bin/helm && \
     rm -rf /tmp/linux-amd64
 
+# Create a user with UID 999
+RUN useradd -ms /bin/bash -u 999 helmuser
+
 # Copy your Helm plugin into the image
 COPY . /quix-manager/
 
 # Set working directory
 WORKDIR /quix-manager
 
-# Install the Helm plugin
-RUN helm plugin install ./
+# Set ownership of /quix-manager to user 999
+RUN chown -R 999:999 /quix-manager
+
+# Switch to user 999
+USER 999
+
+# Install the Helm plugin as user 999
+RUN helm plugin install /quix-manager
 
 # Set the default command
 CMD ["helm"]

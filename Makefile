@@ -1,8 +1,8 @@
 # Variables
-IMAGE_NAME=quixpublic.azurecr.io/helm-quix-install:newargo
+IMAGE_NAME=quixpublic.azurecr.io/helm-quix-install:argocd
 CONTAINER_NAME=helm-quix-install-container
 DOCKER_FILE=Dockerfile
-PLATFORM ?= linux/amd64
+PLATFORM ?= linux/amd64,linux/arm64
 # Build the Docker image
 build:
 	@echo "Building Docker image..."
