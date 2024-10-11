@@ -403,5 +403,9 @@ class YamlMerger:
         :param file_path: The file path where the merged YAML will be saved.
         """
         merged_data = self.merge()
+        #Special overrides. Always it is more important the new one
+        merged_data['global']['byocZipVersion'] = self.new_fields_data['global']['byocZipVersion']
+        merged_data['image']['tag'] = self.new_fields_data['image']['tag']
+        # Delete User-Supplied Values
         del merged_data['USER-SUPPLIED VALUES']
         FileManager.write_values(file_path=file_path,values=merged_data)
