@@ -1,58 +1,67 @@
-# helm-install-env-var 
+# Quix Manager - Helm Plugin
+## Overview
 
-## Installing
+The quix-manager plugin is a Python-based tool that provides an interface to manage Helm charts for Kubernetes. It supports essential Helm actions like update and template, along with the ability to generate logs and export them as a Kubernetes ConfigMap, ideal for integration with CI/CD systems like ArgoCD. The plugin allows overriding Helm chart values and running Helm commands with enhanced verbosity, ensuring a clear understanding of the execution flow.
 
-Requirements
+## Prerequisites
+
+To use the quix-manager plugin, ensure the following dependencies are installed:
+
 - python 3.8+
 - git
 - helm
-- jinja2
 
-**Run in your favorite terminal (Run as Administrator in Windows)**
+## Installation
+
+Run: 
 ```
-helm plugin install http://github.com/joseenrique/helm-install-env-var
+helm plugin install https://github.com/quixio/helm-quix-install
 ```
 
 ## Usage
-- Be sure to have added your dependent charts according to this guide: https://docs.helm.sh/helm/#helm-dependency
-- Navigate to the directory that contains your outer values.yaml file to run these commands
+This plugin is designed to run via the command line. Below are examples of how to execute the most common Helm actions using `quix-manager`.
   
-Command:
+### Command Structure
 
 ```
-helm install-env-var --name <namelocalchart> -v <absolute path of values.yaml> -c <absolute path of Charts.yaml>
+helm quix-manager <action> --release-name <release-name> --repo <repo-url> [optional-flags]
 ```
 
-Example:
+### Supported Actions
+- `update`: Updates an existing Helm release.
+- `template`: Generates Kubernetes manifest templates without applying them.
+
+
+### Example Commands
+
+#### Update a Helm Release
+To update a release named my-release from a Helm repository located at oci://charts.example.com/helm:latest , run the following command:
+
 ```
-helm  install-env-var --name test -v $(pwd)/test/values.yaml -c $(pwd)/test/Charts.yaml
+helm quix-manager update --release-name my-release --repo oci://charts.example.com/helm:latest --namespace default
 ```
-- Open values.yaml, edit and remove things you don't need to override the dependency's default values
+- `--release-name`: The name of the release to be updated.
+- `--repo`: The repository URL for the Helm chart.
+- `--namespace`: (Optional) The Kubernetes namespace where the Helm release will be applied.
+
+#### Generate Helm Templates
+If you want to generate Kubernetes manifest templates without applying them, use the `template` action:
+
+```
+helm quix-manager template --release-name my-release --repo oci://charts.example.com/helm:latest  --namespace default
+```
+
+#### Override Default Values
+If you want to override values in the Helm chart, you can use the `--override` option:
+
+```
+helm quix-manager template --release-name my-release --repo https://charts.example.com/ --namespace default
+```
+
 
 ## Uninstalling
 
-**Run in your favorite terminal (Run as Administrator in Windows)**
 ```
-helm plugin remove install-env-var
+helm plugin uninstall quix-manager
 ```
 
-## Rendering templates
-You can use the environment variables from your system to pass and render to your documents
-
-The syntax:
-
-{{ "default" | ENV('TEST_VAR') }}
-
-```
-apiVersion: v2
-name: test-fakfa
-version: 1.1.0
-appVersion: 1.11.12
-description: This Chart deploys Kafka.
-dependencies:
-  - name: kafka
-    condition: kafka.enabled
-    repository: https://charts.bitnami.com/bitnami
-    version: {{ "20.0.2" | ENV('VERSION') }}
-
-```
