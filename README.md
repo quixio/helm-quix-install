@@ -55,7 +55,20 @@ helm quix-manager template --release-name my-release --repo oci://charts.example
 If you want to override values in the Helm chart, you can use the `--override` option:
 
 ```
-helm quix-manager template --release-name my-release --repo https://charts.example.com/ --namespace default
+helm quix-manager update --release-name my-release --repo oci://charts.example.com/helm:latest --override path/file/tooverride
+```
+
+#### Verbose Logging
+If you need more detailed output, use the `--verbose` flag to enable verbose logging:
+
+```
+helm quix-manager update --release-name my-release --repo oci://charts.example.com/helm:latest --verbose
+```
+#### Logs as Configmap
+For CI/CD integration (e.g., ArgoCD), the `--logs-as-config` flag allows you to generate a Kubernetes ConfigMap with the logs from the Helm operation:
+
+```
+helm quix-manager update --release-name my-release --repo oci://charts.example.com/helm:latest  --logs-as-config
 ```
 
 
