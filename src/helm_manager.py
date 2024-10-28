@@ -22,7 +22,7 @@ class HelmManager:
             logging.debug("No override file provided.")
             self.override_path = None
 
-        self.release_name = args.release_name
+        self.release_name = args.release_name if args.release_name else "quixplatform-manager"
         self.repo, self.version = self._extract_version_and_format(args.repo)
         self.namespace = args.namespace or os.environ.get('HELM_NAMESPACE')
         self.action = args.action
@@ -35,6 +35,7 @@ class HelmManager:
         self.current_file_path = os.path.join(deployment_dir, f"{self.release_name}current.yaml")
         self.default_file_path = os.path.join(deployment_dir, f"{self.release_name}default.yaml")
         self.merged_file_path = os.path.join(deployment_dir, f"{self.release_name}merged.yaml")
+
 
     def _run_helm_with_args(self, helm_args: list, output_file: str = None):
         """
