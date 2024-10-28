@@ -38,9 +38,8 @@ helm quix-manager <action> --release-name <release-name> --repo <repo-url> [opti
 To update a release named my-release from a Helm repository located at oci://charts.example.com/helm:latest , run the following command:
 
 ```
-helm quix-manager update --release-name my-release --repo oci://charts.example.com/helm:latest --namespace default
+helm quix-manager update --repo oci://charts.example.com/helm:latest --namespace default
 ```
-- `--release-name`: (Optional) The name of the release to be updated. By default `quixplatform-manager`
 - `--repo`: The repository URL for the Helm chart.
 - `--namespace`: (Optional) The Kubernetes namespace where the Helm release will be applied. By default the namespace you are set in your context
 
@@ -48,27 +47,27 @@ helm quix-manager update --release-name my-release --repo oci://charts.example.c
 If you want to generate Kubernetes manifest templates without applying them, use the `template` action:
 
 ```
-helm quix-manager template --release-name my-release --repo oci://charts.example.com/helm:latest  --namespace default
+helm quix-manager template --repo oci://charts.example.com/helm:latest  --namespace default
 ```
 
 #### Override Default Values
 If you want to override values in the Helm chart, you can use the `--override` option:
 
 ```
-helm quix-manager update --release-name my-release --repo oci://charts.example.com/helm:latest --override path/file/tooverride
+helm quix-manager update --repo oci://charts.example.com/helm:latest --override path/file/tooverride
 ```
 
 #### Verbose Logging
 If you need more detailed output, use the `--verbose` flag to enable verbose logging:
 
 ```
-helm quix-manager update --release-name my-release --repo oci://charts.example.com/helm:latest --verbose
+helm quix-manager update --repo oci://charts.example.com/helm:latest --verbose
 ```
 #### Logs as Configmap
 For CI/CD integration (e.g., ArgoCD), the `--logs-as-config` flag allows you to generate a Kubernetes ConfigMap with the logs from the Helm operation:
 
 ```
-helm quix-manager update --release-name my-release --repo oci://charts.example.com/helm:latest  --logs-as-config
+helm quix-manager update --repo oci://charts.example.com/helm:latest  --logs-as-config
 ```
 
 
