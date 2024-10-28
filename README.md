@@ -40,9 +40,9 @@ To update a release named my-release from a Helm repository located at oci://cha
 ```
 helm quix-manager update --release-name my-release --repo oci://charts.example.com/helm:latest --namespace default
 ```
-- `--release-name`: The name of the release to be updated.
+- `--release-name`: (Optional) The name of the release to be updated. By default `quixplatform-manager`
 - `--repo`: The repository URL for the Helm chart.
-- `--namespace`: (Optional) The Kubernetes namespace where the Helm release will be applied.
+- `--namespace`: (Optional) The Kubernetes namespace where the Helm release will be applied. By default the namespace you are set in your context
 
 #### Generate Helm Templates
 If you want to generate Kubernetes manifest templates without applying them, use the `template` action:
