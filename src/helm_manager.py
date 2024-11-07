@@ -160,9 +160,13 @@ class HelmManager:
                 logging.info("Merged YAML file created.")
                 if self.action == "update":
                     self._update_with_merged_values()
+                    logging.info(f"Action {self.action} completed successfully.")
                 elif self.action == "template":
                     self._template_with_merged_values()
-
+                    logging.info(f"Action {self.action} completed successfully.")
+                else:
+                    #If you use this Class from command line, will not reach cause there is a restriction of choices at the top level
+                    logging.error("This option cannot be used")
                 FileManager.delete_folder(self.deployment.get_dir())
                 logging.info(f"Action {self.action} completed successfully.")
             except Exception as e:
