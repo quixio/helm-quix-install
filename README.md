@@ -50,12 +50,22 @@ If you want to generate Kubernetes manifest templates without applying them, use
 helm quix-manager template --repo oci://charts.example.com/helm:latest  --namespace default
 ```
 
-#### Override Default Values
+#### Update Values to Something Custom
 If you want to override values in the Helm chart, you can use the `--override` option:
 
 ```
 helm quix-manager update --repo oci://charts.example.com/helm:latest --override path/file/tooverride
 ```
+
+The file needs to be in the same format as the values file. The following example represents how to change the deployment service replicacount :
+
+```
+platformVariables:
+    infrastructure:
+        deploymentsService:
+            replicaCount: 10
+```
+
 
 #### Verbose Logging
 If you need more detailed output, use the `--verbose` flag to enable verbose logging:
