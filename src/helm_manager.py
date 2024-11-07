@@ -166,7 +166,7 @@ class HelmManager:
                     logging.info(f"Action {self.action} completed successfully.")
                 else:
                     #If you use this Class from command line, will not reach cause there is a restriction of choices at the top level
-                    logging.error("This option cannot be used")
+                    logging.error(f"Action {self.action} cannot be used")
                 FileManager.delete_folder(self.deployment.get_dir())
                 logging.info(f"Action {self.action} completed successfully.")
             except Exception as e:
