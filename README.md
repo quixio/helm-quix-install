@@ -7,7 +7,7 @@ The quix-manager plugin is a Python-based tool that provides an interface to man
 
 To use the quix-manager plugin, ensure the following dependencies are installed:
 
-- python 3.8+
+- python 3.9+
 - git
 - helm
 

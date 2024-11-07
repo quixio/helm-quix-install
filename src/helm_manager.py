@@ -158,13 +158,15 @@ class HelmManager:
                 yaml_merger = YamlMerger(source_file=self.current_file_path, new_fields_file=self.default_file_path, override_file=self.override_path)
                 yaml_merger.save_merged_yaml(file_path=self.merged_file_path)
                 logging.info("Merged YAML file created.")
-                
-                match self.action:
-                    case "update":
-                        self._update_with_merged_values()
-                    case "template":
-                        self._template_with_merged_values()
-
+                if self.action == "update":
+                    self._update_with_merged_values()
+                    logging.info(f"Action {self.action} completed successfully.")
+                elif self.action == "template":
+                    self._template_with_merged_values()
+                    logging.info(f"Action {self.action} completed successfully.")
+                else:
+                    #If you use this Class from command line, will not reach cause there is a restriction of choices at the top level
+                    logging.error(f"Action {self.action} cannot be used")
                 FileManager.delete_folder(self.deployment.get_dir())
                 logging.info(f"Action {self.action} completed successfully.")
             except Exception as e:
