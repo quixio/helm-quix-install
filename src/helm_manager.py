@@ -170,7 +170,8 @@ class HelmManager:
                 logging.error(f"Error during execution: {e}")
                 sys.exit(1)
         else:
-            logging.warning(f"Release {self.release_name} does not exist. You need to install it first.")
+            logging.error(f"Release {self.release_name} does not exist. You need to install it first.")
+            sys.exit(1)
 
 
 class FileManager:
