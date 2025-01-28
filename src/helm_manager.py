@@ -22,7 +22,7 @@ class HelmManager:
             logging.debug("No override file provided.")
             self.override_path = None
 
-        self.release_name = args.release_name
+        self.release_name = args.release_name if args.release_name else "quixplatform-manager"
         self.repo, self.version = self._extract_version_and_format(args.repo)
         self.namespace = args.namespace or os.environ.get('HELM_NAMESPACE')
         self.action = args.action
@@ -35,6 +35,7 @@ class HelmManager:
         self.current_file_path = os.path.join(deployment_dir, f"{self.release_name}current.yaml")
         self.default_file_path = os.path.join(deployment_dir, f"{self.release_name}default.yaml")
         self.merged_file_path = os.path.join(deployment_dir, f"{self.release_name}merged.yaml")
+
 
     def _run_helm_with_args(self, helm_args: list, output_file: str = None):
         """
@@ -157,13 +158,15 @@ class HelmManager:
                 yaml_merger = YamlMerger(source_file=self.current_file_path, new_fields_file=self.default_file_path, override_file=self.override_path)
                 yaml_merger.save_merged_yaml(file_path=self.merged_file_path)
                 logging.info("Merged YAML file created.")
-                
-                match self.action:
-                    case "update":
-                        self._update_with_merged_values()
-                    case "template":
-                        self._template_with_merged_values()
-
+                if self.action == "update":
+                    self._update_with_merged_values()
+                    logging.info(f"Action {self.action} completed successfully.")
+                elif self.action == "template":
+                    self._template_with_merged_values()
+                    logging.info(f"Action {self.action} completed successfully.")
+                else:
+                    #If you use this Class from command line, will not reach cause there is a restriction of choices at the top level
+                    logging.error(f"Action {self.action} cannot be used")
                 FileManager.delete_folder(self.deployment.get_dir())
                 logging.info(f"Action {self.action} completed successfully.")
             except Exception as e:

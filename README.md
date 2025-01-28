@@ -7,7 +7,7 @@ The quix-manager plugin is a Python-based tool that provides an interface to man
 
 To use the quix-manager plugin, ensure the following dependencies are installed:
 
-- python 3.8+
+- python 3.9+
 - git
 - helm
 
@@ -38,37 +38,46 @@ helm quix-manager <action> --release-name <release-name> --repo <repo-url> [opti
 To update a release named my-release from a Helm repository located at oci://charts.example.com/helm:latest , run the following command:
 
 ```
-helm quix-manager update --release-name my-release --repo oci://charts.example.com/helm:latest --namespace default
+helm quix-manager update --repo oci://charts.example.com/helm:latest --namespace default
 ```
-- `--release-name`: The name of the release to be updated.
 - `--repo`: The repository URL for the Helm chart.
-- `--namespace`: (Optional) The Kubernetes namespace where the Helm release will be applied.
+- `--namespace`: (Optional) The Kubernetes namespace where the Helm release will be applied. By default the namespace you are set in your context
 
 #### Generate Helm Templates
 If you want to generate Kubernetes manifest templates without applying them, use the `template` action:
 
 ```
-helm quix-manager template --release-name my-release --repo oci://charts.example.com/helm:latest  --namespace default
+helm quix-manager template --repo oci://charts.example.com/helm:latest  --namespace default
 ```
 
-#### Override Default Values
+#### Update Values to Something Custom
 If you want to override values in the Helm chart, you can use the `--override` option:
 
 ```
-helm quix-manager update --release-name my-release --repo oci://charts.example.com/helm:latest --override path/file/tooverride
+helm quix-manager update --repo oci://charts.example.com/helm:latest --override path/file/tooverride
 ```
+
+The file needs to be in the same format as the values file. The following example represents how to change the deployment service replicacount :
+
+```
+platformVariables:
+    infrastructure:
+        deploymentsService:
+            replicaCount: 10
+```
+
 
 #### Verbose Logging
 If you need more detailed output, use the `--verbose` flag to enable verbose logging:
 
 ```
-helm quix-manager update --release-name my-release --repo oci://charts.example.com/helm:latest --verbose
+helm quix-manager update --repo oci://charts.example.com/helm:latest --verbose
 ```
 #### Logs as Configmap
 For CI/CD integration (e.g., ArgoCD), the `--logs-as-config` flag allows you to generate a Kubernetes ConfigMap with the logs from the Helm operation:
 
 ```
-helm quix-manager update --release-name my-release --repo oci://charts.example.com/helm:latest  --logs-as-config
+helm quix-manager update --repo oci://charts.example.com/helm:latest  --logs-as-config
 ```
 
 
