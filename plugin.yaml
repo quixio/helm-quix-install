@@ -1,5 +1,5 @@
 name: "quix-manager"
-version: "0.1.1"
+version: "0.2.0"
 usage: "helm quix-manager update --release-name quixplatform-manager --repo quixcontainerregistry.azurecr.io/helm/quixplatform-manager:1.5.4"
 description: |-
   A helm plugin to install quix.
@@ -8,6 +8,31 @@ useTunnel: true
 command: "$HELM_PLUGIN_DIR/venv/bin/python $HELM_PLUGIN_DIR/quix_install_command.py"
 hooks:
   install: |
+    #!/bin/bash
+    set -e
+    echo "Updating the plugin ...."
+    # Check for Python 3
+    if command -v python3 &>/dev/null; then
+      PYTHON_CMD=python3
+    elif command -v python &>/dev/null; then
+      PYTHON_CMD=python
+    else
+      echo "Python 3 is required for this plugin. Please install Python 3."
+      exit 1
+    fi
+
+    # Verify that the Python command is version 3
+    if ! $PYTHON_CMD -c 'import sys; exit(0) if sys.version_info[0] == 3 else exit(1)'; then
+      echo "Detected Python version is not 3. Please use Python 3."
+      exit 1
+    fi
+
+    # Create a virtual environment in the plugin directory
+    $PYTHON_CMD -m venv "$HELM_PLUGIN_DIR/venv"
+
+    # Activate the virtual environment and install pip requirements
+    "$HELM_PLUGIN_DIR/venv/bin/pip" install -r "$HELM_PLUGIN_DIR/src/requirements.txt"
+  update: |
     #!/bin/bash
     set -e
 

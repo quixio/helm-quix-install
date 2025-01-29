@@ -123,3 +123,5 @@ venv.bak/
 celerybeat-schedule
 celerybeat
 tmp/
+
+.DS_Store

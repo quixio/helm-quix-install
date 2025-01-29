@@ -1,7 +1,7 @@
 import os, sys, shutil, subprocess, yaml, tarfile,logging
 from argparse import Namespace
 
-logging = logging.getLogger('helm_logger')
+logging = logging.getLogger('quix-manager')
 
 class HelmManager:
     def __init__(self, args: Namespace = None):
@@ -37,12 +37,11 @@ class HelmManager:
         self.merged_file_path = os.path.join(deployment_dir, f"{self.release_name}merged.yaml")
 
 
-    def _run_helm_with_args(self, helm_args: list, output_file: str = None):
+    def _run_helm_with_args(self, helm_args: list):
         """
         Runs a Helm command with the provided arguments.
 
         :param helm_args: List of arguments for the Helm command.
-        :param output_file: Optional file to store Helm command output.
         """
         command = ['helm'] + helm_args
         logging.debug(f"Executing Helm command: {command}")
@@ -93,7 +92,51 @@ class HelmManager:
             list_args.extend(["--namespace", self.namespace])
         result = self._run_helm_with_args(list_args)
         return release_name in result.stdout.decode('utf-8')
+    
+    @staticmethod
+    def parse_output(output_str):
+        """ 
+        Parse the output of a Helm command into a dictionary.
+        """
+        result = {}
+        # Split the output into lines and extract key-value pairs
+        lines = output_str.strip().split('\n')
+        for line in lines:
+            if ':' in line:
+                key, value = line.split(':', 1)  
+                result[key.strip()] = value.strip()
 
+        return result
+
+    def _rollback(self, revision: str):
+        """
+        Rollback to the specified revision of a Helm release.
+        :param revision: Revision number to rollback to.
+
+        """
+        list_args = ['rollback', self.release_name, revision ]
+        if self.namespace:
+            list_args.extend(['--namespace', self.namespace])
+        self._run_helm_with_args(list_args)
+
+        logging.info(f"Rolled back to revision {revision}.")
+
+    def _get_release_status(self):
+        """
+        Retrieves the current status of a Helm release.
+
+        :param release_name: Name of the Helm release.
+        :return: Status of the release.
+        """
+        list_args = ['status', self.release_name]
+        if self.namespace:
+            list_args.extend(['--namespace', self.namespace])
+        status_result = self._run_helm_with_args(list_args)
+        status_output = self.parse_output(status_result.stdout.decode('utf-8'))
+
+        logging.info(f"The status of the Helm chart {self.release_name} is: {status_output.get('STATUS')}")
+        return status_output
+    
     def pull_repo(self):
         """
         Pulls the Helm chart from the specified repository.
@@ -140,15 +183,15 @@ class HelmManager:
         if self.namespace:
             list_args.extend(["--namespace", self.namespace])
         result = self._run_helm_with_args(list_args)
-        print(result.stdout.decode('utf-8'))
 
     def run(self):
         """
         Executes the main logic: checks if the release exists, retrieves values, merges YAML files, 
         and either updates the release or generates a template.
         """
-        exist_release = self._check_if_exists(release_name=self.release_name)
 
+        exist_release = self._check_if_exists(release_name=self.release_name)
+        
         if exist_release:
             try:
                 values = self._get_values(release_name=self.release_name)
@@ -173,7 +216,17 @@ class HelmManager:
                 logging.error(f"Error during execution: {e}")
                 sys.exit(1)
         else:
-            logging.warning(f"Release {self.release_name} does not exist. You need to install it first.")
+            status = self._get_release_status()
+            if status.get('STATUS') == 'pending-upgrade':
+                logging.debug(f"Release {self.release_name} is in pending-upgrade status.")
+                revision = str(int(status.get('REVISION'))-1)
+                self._rollback(revision)
+                logging.debug(f"Release {self.release_name} has been rolled back and running the upgrade.")
+                self.run()
+            else:    
+                logging.error(f"Release {self.release_name} does not exist. You need to install it first.")
+                sys.exit(1)
+
 
 
 class FileManager:
