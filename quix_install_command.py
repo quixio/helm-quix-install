@@ -18,6 +18,32 @@ def generate_configmap(logs, configmap_name='quix-manager-log-configmap', namesp
     }
     return configmap
 
+def setup_logging(verbose: bool):
+    # Define the log format
+    log_format = '# %(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    # Create an in-memory stream to capture logs
+    log_stream = io.StringIO()
+
+    # Configure logger for both stdout and in-memory logging
+    logger = logging.getLogger('quix-manager')
+    logger.propagate = False  # Prevent log messages from propagating to the root logger
+    
+    if not logger.hasHandlers():
+        # Handler for logging to stdout
+        console_handler = logging.StreamHandler()
+        console_handler.setFormatter(logging.Formatter(log_format))
+        logger.addHandler(console_handler)
+        
+        # Handler for capturing logs in memory
+        memory_handler = logging.StreamHandler(log_stream)
+        memory_handler.setFormatter(logging.Formatter(log_format))
+        logger.addHandler(memory_handler)
+    
+    # Set log level based on verbosity
+    logger.setLevel(logging.DEBUG if verbose else logging.INFO)
+    
+    return logger, log_stream
+
 
 
 if __name__ == "__main__":
@@ -33,39 +59,17 @@ if __name__ == "__main__":
     parser.add_argument('--logs-as-config', action='store_true', help='Write in the stdout a configmap with all logs happened. This is essentially for argocd')
     
 
-    # Set up logging
-    log_format = '# %(levelname)s: %(message)s'
-    
-    # Create an in-memory stream to capture logs
-    log_stream = io.StringIO()
-    
-    # Configure logger for both stdout and in-memory logging
-    logger = logging.getLogger('helm_logger')
-
     # Get the args from command
     args, _ = parser.parse_known_args()
-    # Avoid adding duplicate handlers in case the script runs multiple times
-    if not logger.hasHandlers():
-        # Handler for logging to stdout
-        console_handler = logging.StreamHandler()
-        console_handler.setFormatter(logging.Formatter(log_format))
-        logger.addHandler(console_handler)
-        
-        # Handler for capturing logs in memory
-        memory_handler = logging.StreamHandler(log_stream)
-        memory_handler.setFormatter(logging.Formatter(log_format))
-        logger.addHandler(memory_handler)
-
-    if args.verbose:
-        logger.setLevel(logging.DEBUG)
-    else:
-        logger.setLevel(logging.INFO)
+    # Set up logging
+    logger, log_stream = setup_logging(args.verbose)
 
     logger.info("Starting Helm command execution")
     # Log some initial info
     helm_manager = HelmManager(args)
     helm_manager.run()
     if args.logs_as_config:
+
         # Retrieve the logs f rom the in-memory log stream
         log_contents = log_stream.getvalue()
     

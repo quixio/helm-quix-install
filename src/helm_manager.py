@@ -1,7 +1,7 @@
 import os, sys, shutil, subprocess, yaml, tarfile,logging
 from argparse import Namespace
 
-logging = logging.getLogger('helm_logger')
+logging = logging.getLogger('quix-manager')
 
 class HelmManager:
     def __init__(self, args: Namespace = None):
@@ -183,7 +183,6 @@ class HelmManager:
         if self.namespace:
             list_args.extend(["--namespace", self.namespace])
         result = self._run_helm_with_args(list_args)
-        print(result.stdout.decode('utf-8'))
 
     def run(self):
         """
@@ -218,10 +217,11 @@ class HelmManager:
                 sys.exit(1)
         else:
             status = self._get_release_status()
-            print (status)
             if status.get('STATUS') == 'pending-upgrade':
+                logging.debug(f"Release {self.release_name} is in pending-upgrade status.")
                 revision = str(int(status.get('REVISION'))-1)
                 self._rollback(revision)
+                logging.debug(f"Release {self.release_name} has been rolled back and running the upgrade.")
                 self.run()
             else:    
                 logging.error(f"Release {self.release_name} does not exist. You need to install it first.")
