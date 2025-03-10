@@ -18,6 +18,16 @@ Run:
 helm plugin install https://github.com/quixio/helm-quix-install
 ```
 
+## Update the plugin
+
+When you update the plugin, you must update it using the name of it. 
+
+Run: 
+```
+helm plugin update quix-manager
+```
+
+
 ## Usage
 This plugin is designed to run via the command line. Below are examples of how to execute the most common Helm actions using `quix-manager`.
   
