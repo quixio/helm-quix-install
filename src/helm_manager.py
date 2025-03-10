@@ -65,6 +65,7 @@ class HelmManager:
         :param repo: The repository string (e.g., 'repo:version').
         :return: Tuple of repository URL and version.
         """
+        print (repo)
         try:
             repo_split = repo.split(":")
             return repo_split[0], repo_split[1]
@@ -319,7 +320,7 @@ class FileManager:
         """
         try:
             with tarfile.open(archive, "r:gz") as tar:
-                tar.extractall(path)
+                tar.extractall(path, filter=lambda tarinfo, dest: tarinfo)
             logging.debug(f"Extracted archive {archive} to {path}")
         except Exception as e:
             logging.error(f"Error extracting the file {archive}: {e}")
