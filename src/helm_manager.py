@@ -204,7 +204,7 @@ class HelmManager:
         logging.info(f"The status of the Helm chart {self.release_name} is: {status_output.get('STATUS')}")
         return status_output
     
-    def pull_repo(self):
+    def _pull_repo(self):
         """
         Pulls the Helm chart from the specified repository.
         """
@@ -216,7 +216,7 @@ class HelmManager:
             logging.error(f"Error pulling chart: {e}")
             sys.exit(1)
 
-    def extract_chart(self):
+    def _extract_chart(self):
         """
         Extracts the pulled Helm chart from a .tgz file.
         """
@@ -261,8 +261,8 @@ class HelmManager:
         if exist_release:
             try:
                 values = self._get_values(release_name=self.release_name)
-                self.pull_repo()
-                self.extract_chart()
+                self._pull_repo()
+                self._extract_chart()
                 FileManager.write_values(file_path=self.current_file_path, values=values)
                 yaml_merger = YamlMerger(source_file=self.current_file_path, new_fields_file=self.default_file_path, override_file=self.override_path)
                 yaml_merger.save_merged_yaml(file_path=self.merged_file_path)

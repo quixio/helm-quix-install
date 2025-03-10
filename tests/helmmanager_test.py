@@ -4,10 +4,7 @@ import tempfile
 import unittest
 from argparse import Namespace
 from unittest.mock import MagicMock, patch
-
-# Assuming that the HelmManager, DeploymentManager, FileManager, and YamlMerger
-# classes are defined in a module named helm_manager.
-from src.helm_manager  import HelmManager, DeploymentManager, FileManager, YamlMerger
+from src.helm_manager  import HelmManager
 
 class TestHelmManager(unittest.TestCase):
     def setUp(self):
@@ -19,7 +16,6 @@ class TestHelmManager(unittest.TestCase):
             repo=None,
             action="update"
         )
-
     def test_init_override_invalid(self):
         """Test that providing an invalid override file causes sys.exit."""
         self.args.override = "/non/existent/file.yaml"
@@ -134,7 +130,7 @@ class TestHelmManager(unittest.TestCase):
         hm = HelmManager(self.args)
         hm.deployment.get_dir = MagicMock(return_value="/tmp/deployment")
         hm._run_helm_with_args = MagicMock(return_value=MagicMock(stdout=b""))
-        hm.pull_repo()
+        hm._pull_repo()
         expected_args = ['pull', 'oci://myrepo', '--version', '2.0.0', '--destination', "/tmp/deployment"]
         hm._run_helm_with_args.assert_called_with(expected_args)
         
@@ -146,7 +142,7 @@ class TestHelmManager(unittest.TestCase):
         hm.default_file_path = "/tmp/deployment/testdefault.yaml"
         with patch('src.helm_manager.FileManager.extract_tgz') as mock_extract, \
              patch('src.helm_manager.FileManager.copy_and_rename') as mock_copy:
-            hm.extract_chart()
+            hm._extract_chart()
             chart_name = "myrepo"
             expected_archive = os.path.join("/tmp/deployment", f"{chart_name}-2.0.0.tgz")
             expected_values_path = os.path.join("/tmp/deployment", chart_name, "values.yaml")
@@ -176,8 +172,8 @@ class TestHelmManager(unittest.TestCase):
         # Simulate that the release exists.
         hm._check_if_exists = MagicMock(return_value=True)
         hm._get_values = MagicMock(return_value="dummy values")
-        hm.pull_repo = MagicMock()
-        hm.extract_chart = MagicMock()
+        hm._pull_repo = MagicMock()
+        hm._extract_chart = MagicMock()
         hm._update_with_merged_values = MagicMock()
         # Patch FileManager.write_values and YamlMerger usage.
         with patch('src.helm_manager.FileManager.write_values') as mock_write, \
@@ -186,8 +182,8 @@ class TestHelmManager(unittest.TestCase):
             dummy_yaml_merger.save_merged_yaml = MagicMock()
             mock_yaml_merger.return_value = dummy_yaml_merger
             hm.run()
-            hm.pull_repo.assert_called_once()
-            hm.extract_chart.assert_called_once()
+            hm._pull_repo.assert_called_once()
+            hm._extract_chart.assert_called_once()
             mock_write.assert_called_once()
             dummy_yaml_merger.save_merged_yaml.assert_called_once_with(file_path=hm.merged_file_path)
             hm._update_with_merged_values.assert_called_once()
