@@ -53,6 +53,21 @@ helm quix-manager update --repo oci://charts.example.com/helm:latest --namespace
 - `--repo`: The repository URL for the Helm chart.
 - `--namespace`: (Optional) The Kubernetes namespace where the Helm release will be applied. By default the namespace you are set in your context
 
+Also you can update an existing release.
+```
+helm quix-manager update --override path/file/tooverride
+```
+
+This will update  the existing release version with the override file
+
+Ultimately you could re-apply the entire installation in case something went wrong:
+
+
+```
+helm quix-manager update
+```
+
+
 #### Generate Helm Templates
 If you want to generate Kubernetes manifest templates without applying them, use the `template` action:
 

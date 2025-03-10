@@ -10,6 +10,8 @@ class HelmManager:
 
         :param args: Parsed command-line arguments for the Helm operation.
         """
+        self.release_name = args.release_name if args.release_name else "quixplatform-manager"
+        self.namespace = args.namespace or os.environ.get('HELM_NAMESPACE')
         # Validate override file
         if args.override:
             if not os.path.isfile(args.override):
@@ -22,11 +24,13 @@ class HelmManager:
             logging.debug("No override file provided.")
             self.override_path = None
 
-        self.release_name = args.release_name if args.release_name else "quixplatform-manager"
-        self.repo, self.version = self._extract_version_and_format(args.repo)
-        self.namespace = args.namespace or os.environ.get('HELM_NAMESPACE')
-        self.action = args.action
+        if args.repo:
+            self.repo, self.version = self._extract_version_and_format(args.repo)
+        else:
+            self.version = self._get_remote_version(release_name=self.release_name)
+            self.repo = "quixcontainerregistry.azurecr.io/helm/quixplatform-manager"
 
+        self.action = args.action
         # Initialize deployment manager
         self.deployment = DeploymentManager()
         self.deployment.setup()
@@ -61,6 +65,7 @@ class HelmManager:
         :param repo: The repository string (e.g., 'repo:version').
         :return: Tuple of repository URL and version.
         """
+        print (repo)
         try:
             repo_split = repo.split(":")
             return repo_split[0], repo_split[1]
@@ -80,18 +85,80 @@ class HelmManager:
             list_args.extend(['--namespace', self.namespace])
         return self._run_helm_with_args(list_args).stdout.decode('utf-8')
 
-    def _check_if_exists(self, release_name: str):
+    def _extract_version_from_stdout(self, helm_output):
+        """
+        Extracts the chart version from the helm output.
+
+        :param helm_output: Helm output string without header.
+        :return: Extracted chart version.
+        """
+        try:
+            parts = helm_output.split()
+            if len(parts) < 9:
+                raise ValueError(f"Expected at least 9 fields, got {len(parts)}")
+            chart_field = parts[8]
+            version = chart_field.rsplit("-", 1)[-1]
+            logging.debug("Extracted version %s from chart field %s", version, chart_field)
+            return version
+        except Exception as e:
+            logging.error("Error extracting chart version: %s", e)
+            raise
+
+    def _check_remote_chart(self, release_name):
+        """
+        Checks the remote helm chart for the given release.
+
+        :param release_name: Name of the helm release.
+        :return: Helm output string without header.
+        """
+        list_args = ['list', '--filter', release_name]
+        if self.namespace:
+            list_args.extend(["--namespace", self.namespace])
+        try:
+            result_obj = self._run_helm_with_args(list_args)
+            result = result_obj.stdout.decode('utf-8')
+        except Exception as e:
+            logging.error("Error running helm command for release %s: %s", release_name, e)
+            raise RuntimeError("Helm command execution failed") from e
+
+        try:
+            lines = result.splitlines()
+            if len(lines) > 1:
+                result_without_header = "\n".join(lines[1:])
+            else:
+                result_without_header = ""
+            logging.debug("Helm output without header: %s", result_without_header)
+            return result_without_header
+        except Exception as e:
+            logging.error("Error processing helm output for release %s: %s", release_name, e)
+            raise
+
+    def _get_remote_version(self, release_name):
+        """
+        Gets the remote helm chart version for the specified release.
+
+        :param release_name: Name of the helm release.
+        :return: Remote chart version.
+        """
+        try:
+            helm_output = self._check_remote_chart(release_name)
+            version = self._extract_version_from_stdout(helm_output)
+            logging.info("Retrieved remote version %s for release %s", version, release_name)
+            return version
+        except Exception as e:
+            logging.error("Error retrieving remote version for release %s: %s", release_name, e)
+            raise
+
+    def _check_if_exists(self, release_name):
         """
         Checks if a Helm release exists.
 
         :param release_name: Name of the Helm release.
         :return: True if the release exists, False otherwise.
-        """
-        list_args = ['list', '--filter', release_name]
-        if self.namespace:
-            list_args.extend(["--namespace", self.namespace])
-        result = self._run_helm_with_args(list_args)
-        return release_name in result.stdout.decode('utf-8')
+        """ 
+        result = self._check_remote_chart(release_name)
+        return (release_name in result)
+    
     
     @staticmethod
     def parse_output(output_str):
@@ -137,7 +204,7 @@ class HelmManager:
         logging.info(f"The status of the Helm chart {self.release_name} is: {status_output.get('STATUS')}")
         return status_output
     
-    def pull_repo(self):
+    def _pull_repo(self):
         """
         Pulls the Helm chart from the specified repository.
         """
@@ -149,7 +216,7 @@ class HelmManager:
             logging.error(f"Error pulling chart: {e}")
             sys.exit(1)
 
-    def extract_chart(self):
+    def _extract_chart(self):
         """
         Extracts the pulled Helm chart from a .tgz file.
         """
@@ -191,27 +258,26 @@ class HelmManager:
         """
 
         exist_release = self._check_if_exists(release_name=self.release_name)
-        
         if exist_release:
             try:
                 values = self._get_values(release_name=self.release_name)
-                self.pull_repo()
-                self.extract_chart()
+                self._pull_repo()
+                self._extract_chart()
                 FileManager.write_values(file_path=self.current_file_path, values=values)
                 yaml_merger = YamlMerger(source_file=self.current_file_path, new_fields_file=self.default_file_path, override_file=self.override_path)
                 yaml_merger.save_merged_yaml(file_path=self.merged_file_path)
                 logging.info("Merged YAML file created.")
                 if self.action == "update":
                     self._update_with_merged_values()
-                    logging.info(f"Action {self.action} completed successfully.")
+                    logging.debug(f"Action {self.action} completed successfully.")
                 elif self.action == "template":
                     self._template_with_merged_values()
-                    logging.info(f"Action {self.action} completed successfully.")
+                    logging.debug(f"Action {self.action} completed successfully.")
                 else:
                     #If you use this Class from command line, will not reach cause there is a restriction of choices at the top level
                     logging.error(f"Action {self.action} cannot be used")
-                FileManager.delete_folder(self.deployment.get_dir())
-                logging.info(f"Action {self.action} completed successfully.")
+                #FileManager.delete_folder(self.deployment.get_dir())
+                logging.info(f"{self.action} has been completed successfully.")
             except Exception as e:
                 logging.error(f"Error during execution: {e}")
                 sys.exit(1)
@@ -254,7 +320,7 @@ class FileManager:
         """
         try:
             with tarfile.open(archive, "r:gz") as tar:
-                tar.extractall(path)
+                tar.extractall(path, filter=lambda tarinfo, dest: tarinfo)
             logging.debug(f"Extracted archive {archive} to {path}")
         except Exception as e:
             logging.error(f"Error extracting the file {archive}: {e}")

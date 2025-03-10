@@ -52,7 +52,7 @@ if __name__ == "__main__":
     # Add your own script-specific parameters here
     parser.add_argument('action', choices = ["update","template"], help='Specify the Helm action to perform (e.g., install, upgrade, delete)')
     parser.add_argument('--release-name', help='Specify the release name for the Helm command')
-    parser.add_argument('--repo', required=True,help='Specify the Helm chart repository')
+    parser.add_argument('--repo', help='Specify the Helm chart repository')
     parser.add_argument('--override', help='Override default values for the Helm chart')
     parser.add_argument('--namespace', help='Specify the Kubernetes namespace for the Helm command')
     parser.add_argument('--verbose', action='store_true', help='Enable verbose output for this script and the Helm command')
