@@ -103,8 +103,7 @@ class HelmManager:
             return version
         except Exception as e:
             logging.error("Error extracting chart version: %s", e)
-            raise
-            
+
 
     def _check_remote_chart(self, release_name):
         """
