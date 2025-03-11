@@ -57,7 +57,7 @@ class HelmManager:
             logging.info("Helm command executed successfully.")
             return result
         except subprocess.CalledProcessError as e:
-            logging.error(f"Helm command failed: {e.stderr.decode('utf-8')}")
+            logging.error(f"Helm command failed {e.stderr.decode('utf-8')}")
             sys.exit(1)
 
     def _extract_version_and_format(self, repo):
@@ -103,7 +103,7 @@ class HelmManager:
             return version
         except Exception as e:
             logging.error("Error extracting chart version: %s", e)
-            raise SystemExit
+            
 
     def _check_remote_chart(self, release_name):
         """

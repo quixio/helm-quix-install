@@ -43,7 +43,7 @@ class TestHelmManager(unittest.TestCase):
         self.assertEqual(hm.version, "2.3.4")
 
     def test_init_timeout(self):
-        """Test that providing a rimeout is set properly."""
+        """Test that providing a timeout is set properly."""
         self.args.timeout = "1m"
         hm = HelmManager(self.args)
         self.assertEqual(hm.timeout, "1m")
