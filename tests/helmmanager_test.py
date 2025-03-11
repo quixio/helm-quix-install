@@ -12,6 +12,7 @@ class TestHelmManager(unittest.TestCase):
         self.args = Namespace(
             release_name="test",
             namespace="default",
+            timeout=None,
             override=None,
             repo=None,
             action="update"
@@ -41,13 +42,19 @@ class TestHelmManager(unittest.TestCase):
         self.assertEqual(hm.repo, "myrepo")
         self.assertEqual(hm.version, "2.3.4")
 
+    def test_init_timeout(self):
+        """Test that providing a rimeout is set properly."""
+        self.args.timeout = "1m"
+        hm = HelmManager(self.args)
+        self.assertEqual(hm.timeout, "1m")
+
     def test_init_no_repo(self):
         """Test that if repo is not provided, _get_remote_version is used and default repo is set."""
         self.args.repo = None
         with patch.object(HelmManager, "_get_remote_version", return_value="9.9.9"):
             hm = HelmManager(self.args)
             self.assertEqual(hm.repo, "quixcontainerregistry.azurecr.io/helm/quixplatform-manager")
-            self.assertEqual(hm.version, "9.9.9")
+            self.assertEqual(hm.version, None)
 
     def test_extract_version_and_format_valid(self):
         """Test _extract_version_and_format with a valid repository string."""

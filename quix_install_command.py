@@ -55,6 +55,7 @@ if __name__ == "__main__":
     parser.add_argument('--repo', help='Specify the Helm chart repository')
     parser.add_argument('--override', help='Override default values for the Helm chart')
     parser.add_argument('--namespace', help='Specify the Kubernetes namespace for the Helm command')
+    parser.add_argument('--timeout', help='Specify the timeout for the Helm command')
     parser.add_argument('--verbose', action='store_true', help='Enable verbose output for this script and the Helm command')
     parser.add_argument('--logs-as-config', action='store_true', help='Write in the stdout a configmap with all logs happened. This is essentially for argocd')
     

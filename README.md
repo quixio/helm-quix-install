@@ -60,6 +60,13 @@ helm quix-manager update --override path/file/tooverride
 
 This will update  the existing release version with the override file
 
+In addition you could increase the timeout
+
+```
+helm quix-manager update --override path/file/tooverride --timeout 10m
+```
+
+
 Ultimately you could re-apply the entire installation in case something went wrong:
 
 
