@@ -12,6 +12,8 @@ class HelmManager:
         """
         self.release_name = args.release_name if args.release_name else "quixplatform-manager"
         self.namespace = args.namespace or os.environ.get('HELM_NAMESPACE')
+        self.timeout = args.timeout or os.environ.get('HELM_TIMEOUT') or "6m"
+
         # Validate override file
         if args.override:
             if not os.path.isfile(args.override):
@@ -27,7 +29,7 @@ class HelmManager:
         if args.repo:
             self.repo, self.version = self._extract_version_and_format(args.repo)
         else:
-            self.version = self._get_remote_version(release_name=self.release_name)
+            self.version = self._get_remote_version(release_name=self.release_name) if self._check_if_exists(release_name=self.release_name) else None
             self.repo = "quixcontainerregistry.azurecr.io/helm/quixplatform-manager"
 
         self.action = args.action
@@ -55,7 +57,7 @@ class HelmManager:
             logging.info("Helm command executed successfully.")
             return result
         except subprocess.CalledProcessError as e:
-            logging.error(f"Helm command failed: {e.stderr.decode('utf-8')}")
+            logging.error(f"Helm command failed {e.stderr.decode('utf-8')}")
             sys.exit(1)
 
     def _extract_version_and_format(self, repo):
@@ -65,7 +67,6 @@ class HelmManager:
         :param repo: The repository string (e.g., 'repo:version').
         :return: Tuple of repository URL and version.
         """
-        print (repo)
         try:
             repo_split = repo.split(":")
             return repo_split[0], repo_split[1]
@@ -102,7 +103,7 @@ class HelmManager:
             return version
         except Exception as e:
             logging.error("Error extracting chart version: %s", e)
-            raise
+
 
     def _check_remote_chart(self, release_name):
         """
@@ -239,6 +240,8 @@ class HelmManager:
         list_args = ['upgrade', '--install', "quixplatform-manager", f"oci://{self.repo}", "--version", self.version, "--values", self.merged_file_path]
         if self.namespace:
             list_args.extend(["--namespace", self.namespace])
+        if self.timeout:    
+            list_args.extend(["--timeout", self.timeout])
         self._run_helm_with_args(list_args)
 
     def _template_with_merged_values(self):
@@ -249,14 +252,15 @@ class HelmManager:
         list_args = ['template', "quixplatform-manager", f"oci://{self.repo}", "--version", self.version, "--values", self.merged_file_path]
         if self.namespace:
             list_args.extend(["--namespace", self.namespace])
-        result = self._run_helm_with_args(list_args)
+        if self.timeout:    
+            list_args.extend(["--timeout", self.timeout])
+        return self._run_helm_with_args(list_args)
 
     def run(self):
         """
         Executes the main logic: checks if the release exists, retrieves values, merges YAML files, 
         and either updates the release or generates a template.
         """
-
         exist_release = self._check_if_exists(release_name=self.release_name)
         if exist_release:
             try:
@@ -271,12 +275,13 @@ class HelmManager:
                     self._update_with_merged_values()
                     logging.debug(f"Action {self.action} completed successfully.")
                 elif self.action == "template":
-                    self._template_with_merged_values()
+                    templates = self._template_with_merged_values()
+                    logging.info(f"{templates.stdout.decode('utf-8')}")
                     logging.debug(f"Action {self.action} completed successfully.")
                 else:
                     #If you use this Class from command line, will not reach cause there is a restriction of choices at the top level
                     logging.error(f"Action {self.action} cannot be used")
-                #FileManager.delete_folder(self.deployment.get_dir())
+                FileManager.delete_folder(self.deployment.get_dir())
                 logging.info(f"{self.action} has been completed successfully.")
             except Exception as e:
                 logging.error(f"Error during execution: {e}")
