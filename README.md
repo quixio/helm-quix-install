@@ -105,6 +105,16 @@ If you need more detailed output, use the `--verbose` flag to enable verbose log
 ```
 helm quix-manager update --repo oci://charts.example.com/helm:latest --verbose
 ```
+
+#### Context Validation
+To confirm the Kubernetes context before proceeding with the operation, use the `--validate-context` flag:
+
+```
+helm quix-manager update --repo oci://charts.example.com/helm:latest --validate-context
+```
+
+This will prompt you to confirm if you want to use the current Kubernetes context before proceeding with the operation.
+
 #### Logs as Configmap
 For CI/CD integration (e.g., ArgoCD), the `--logs-as-config` flag allows you to generate a Kubernetes ConfigMap with the logs from the Helm operation:
 
