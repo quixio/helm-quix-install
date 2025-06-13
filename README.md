@@ -10,6 +10,7 @@ To use the quix-manager plugin, ensure the following dependencies are installed:
 - python 3.9+
 - git
 - helm
+- kubectl
 
 ## Installation
 

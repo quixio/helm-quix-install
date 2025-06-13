@@ -1,6 +1,7 @@
 import argparse, logging,io, yaml
 from src.helm_manager import  HelmManager
 import subprocess
+import shutil
 
 
 
@@ -18,6 +19,12 @@ def generate_configmap(logs, configmap_name='quix-manager-log-configmap', namesp
         }
     }
     return configmap
+
+def check_kubectl_installed():
+    if shutil.which('kubectl') is None:
+        print("Error: kubectl is not installed or not found in PATH")
+        return False
+    return True
 
 def get_current_context():
     try:
@@ -86,6 +93,10 @@ if __name__ == "__main__":
 
     # Get the args from command
     args, _ = parser.parse_known_args()
+    
+    # Check if kubectl is installed
+    if not check_kubectl_installed():
+        exit(1)
     
     # Set up logging
     logger, log_stream = setup_logging(args.verbose)
