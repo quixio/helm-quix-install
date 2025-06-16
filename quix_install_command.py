@@ -1,5 +1,7 @@
 import argparse, logging,io, yaml
 from src.helm_manager import  HelmManager
+import subprocess
+import shutil
 
 
 
@@ -17,6 +19,34 @@ def generate_configmap(logs, configmap_name='quix-manager-log-configmap', namesp
         }
     }
     return configmap
+
+def check_kubectl_installed():
+    if shutil.which('kubectl') is None:
+        print("Error: kubectl is not installed or not found in PATH")
+        return False
+    return True
+
+def get_current_context():
+    try:
+        result = subprocess.run(['kubectl', 'config', 'current-context'], 
+                              capture_output=True, text=True, check=True)
+        return result.stdout.strip()
+    except subprocess.CalledProcessError:
+        return None
+
+def confirm_current_context():
+    current_context = get_current_context()
+    if not current_context:
+        print("No Kubernetes context is currently set")
+        return False
+        
+    while True:
+        response = input(f"Do you want to use this context? ({current_context}) [y/n]: ").lower()
+        if response in ['y', 'yes']:
+            return True
+        elif response in ['n', 'no']:
+            return False
+        print("Please answer 'y' or 'n'")
 
 def setup_logging(verbose: bool):
     # Define the log format
@@ -58,12 +88,24 @@ if __name__ == "__main__":
     parser.add_argument('--timeout', help='Specify the timeout for the Helm command')
     parser.add_argument('--verbose', action='store_true', help='Enable verbose output for this script and the Helm command')
     parser.add_argument('--logs-as-config', action='store_true', help='Write in the stdout a configmap with all logs happened. This is essentially for argocd')
+    parser.add_argument('--validate-context', action='store_true', help='Ask for confirmation before using the current Kubernetes context')
     
 
     # Get the args from command
     args, _ = parser.parse_known_args()
+    
+    # Check if kubectl is installed
+    if not check_kubectl_installed():
+        exit(1)
+    
     # Set up logging
     logger, log_stream = setup_logging(args.verbose)
+    
+    # Validate current context only if requested
+    if args.validate_context:
+        if not confirm_current_context():
+            logger.info("Operation cancelled by user")
+            exit(0)
 
     logger.info("Starting Helm command execution")
     # Log some initial info
