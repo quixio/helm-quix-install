@@ -1,9 +1,9 @@
 import unittest
+from unittest.mock import patch
 from src.helm_manager import FileManager
 import os
 import tarfile
 import tempfile
-import unittest
 import yaml
 
 class TestFileManager(unittest.TestCase):
@@ -53,6 +53,48 @@ class TestFileManager(unittest.TestCase):
             with open(extracted_file_path, "r") as f:
                 content = f.read()
             self.assertEqual(content, file_content)
+
+    def test_extract_tgz_python_312_uses_filter(self):
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            file_path = os.path.join(tmpdirname, "test.txt")
+            with open(file_path, "w") as f:
+                f.write("content")
+
+            archive_path = os.path.join(tmpdirname, "archive.tgz")
+            with tarfile.open(archive_path, "w:gz") as tar:
+                tar.add(file_path, arcname="test.txt")
+
+            extract_dir = os.path.join(tmpdirname, "extracted")
+            os.makedirs(extract_dir)
+
+            with patch("src.helm_manager.sys.version_info", (3, 12, 0)):
+                FileManager.extract_tgz(archive_path, extract_dir)
+
+            extracted_file = os.path.join(extract_dir, "test.txt")
+            self.assertTrue(os.path.exists(extracted_file))
+            with open(extracted_file) as f:
+                self.assertEqual(f.read(), "content")
+
+    def test_extract_tgz_python_39_no_filter(self):
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            file_path = os.path.join(tmpdirname, "test.txt")
+            with open(file_path, "w") as f:
+                f.write("content")
+
+            archive_path = os.path.join(tmpdirname, "archive.tgz")
+            with tarfile.open(archive_path, "w:gz") as tar:
+                tar.add(file_path, arcname="test.txt")
+
+            extract_dir = os.path.join(tmpdirname, "extracted")
+            os.makedirs(extract_dir)
+
+            with patch("src.helm_manager.sys.version_info", (3, 9, 0)):
+                FileManager.extract_tgz(archive_path, extract_dir)
+
+            extracted_file = os.path.join(extract_dir, "test.txt")
+            self.assertTrue(os.path.exists(extracted_file))
+            with open(extracted_file) as f:
+                self.assertEqual(f.read(), "content")
 
     def test_copy_and_rename(self):
         with tempfile.TemporaryDirectory() as tmpdirname:
