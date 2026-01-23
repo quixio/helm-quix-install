@@ -325,7 +325,11 @@ class FileManager:
         """
         try:
             with tarfile.open(archive, "r:gz") as tar:
-                tar.extractall(path, filter=lambda tarinfo, dest: tarinfo)
+                if sys.version_info >= (3, 12):
+                    tar.extractall(path, filter="data")
+                else:
+                    tar.extractall(path=path)
+
             logging.debug(f"Extracted archive {archive} to {path}")
         except Exception as e:
             logging.error(f"Error extracting the file {archive}: {e}")
